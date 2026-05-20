@@ -1,0 +1,5 @@
+post_id,metric_date,impressions,reach,likes,comments,saves,shares,media_type,caption,posted_at,permalink
+demo_reel_1,2025-04-01,5200,4100,180,32,64,8,reel,Launch day,2025-03-28T18:00:00Z,https://instagram.com/p/demo_reel_1
+demo_reel_1,2025-04-02,5400,4200,190,28,70,6,reel,Launch day,2025-03-28T18:00:00Z,https://instagram.com/p/demo_reel_1
+demo_carousel_1,2025-04-01,2100,1800,95,12,40,2,carousel,BTS shots,2025-03-30T12:00:00Z,https://instagram.com/p/demo_carousel_1
+demo_carousel_1,2025-04-03,2300,1900,102,15,44,3,carousel,BTS shots,2025-03-30T12:00:00Z,https://instagram.com/p/demo_carousel_1
