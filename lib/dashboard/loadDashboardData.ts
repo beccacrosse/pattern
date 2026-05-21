@@ -5,10 +5,7 @@ import {
   aggregatePeriodTotals,
   aggregateTrendByDay,
 } from "@/lib/analytics/engagement";
-
-function toISODate(d: Date) {
-  return d.toISOString().slice(0, 10);
-}
+import { defaultMetricWeekRange } from "@/lib/dashboard/dateRange";
 
 export type DashboardSearchParams = {
   from?: string;
@@ -26,13 +23,18 @@ export async function loadDashboardData(searchParams: DashboardSearchParams) {
     return { user: null as null };
   }
 
-  const to = searchParams.to ? new Date(searchParams.to) : new Date();
-  const from = searchParams.from
-    ? new Date(searchParams.from)
-    : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const { data: latestMetric } = await supabase
+    .from("post_metrics_daily")
+    .select("metric_date")
+    .eq("user_id", user.id)
+    .order("metric_date", { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
-  const fromStr = toISODate(from);
-  const toStr = toISODate(to);
+  const defaults = defaultMetricWeekRange(latestMetric?.metric_date ?? null);
+  const fromStr = searchParams.from ?? defaults.from;
+  const toStr = searchParams.to ?? defaults.to;
+  const usingDefaultRange = !searchParams.from && !searchParams.to;
 
   const { data: prefRow } = await supabase
     .from("user_preferences")
@@ -142,6 +144,8 @@ export async function loadDashboardData(searchParams: DashboardSearchParams) {
     user,
     from: fromStr,
     to: toStr,
+    usingDefaultRange,
+    latestMetricDate: latestMetric?.metric_date ?? null,
     mediaFilter,
     denominator,
     trend,

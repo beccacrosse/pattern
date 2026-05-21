@@ -2,11 +2,31 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { importCsvAction, type ImportCsvResult } from "@/app/actions/import";
+import { ImportPreviewTable, ImportResultSummary } from "@/components/ImportJobDetail";
 import { parseCsv, suggestMapping } from "@/lib/import/csvParser";
 import type { CsvColumnMapping } from "@/lib/import/types";
 import { STANDARD_COLUMNS, type StandardColumn } from "@/lib/import/types";
 
-export function ImportCsvClient() {
+export type ImportCompletePayload = {
+  jobId: string;
+  filename: string;
+  mapping: CsvColumnMapping;
+  headers: string[];
+  previewRows: Record<string, string>[];
+  rowCount?: number;
+  ok: boolean;
+  message: string;
+  parseErrors?: ImportCsvResult["parseErrors"];
+  dbErrors?: ImportCsvResult["dbErrors"];
+};
+
+export function ImportCsvClient({
+  onImportComplete,
+  onViewDetails,
+}: {
+  onImportComplete?: (payload: ImportCompletePayload) => void;
+  onViewDetails?: (jobId: string) => void;
+} = {}) {
   const [filename, setFilename] = useState("");
   const [csvText, setCsvText] = useState("");
   const [mapping, setMapping] = useState<CsvColumnMapping>({});
@@ -59,6 +79,20 @@ export function ImportCsvClient() {
     startTransition(async () => {
       const res = await importCsvAction({ csvText, mapping, filename: filename || "upload.csv" });
       setResult(res);
+      if (res.importJobId) {
+        onImportComplete?.({
+          jobId: res.importJobId,
+          filename: filename || "upload.csv",
+          mapping,
+          headers,
+          previewRows,
+          rowCount: res.rowCount,
+          ok: res.ok,
+          message: res.message,
+          parseErrors: res.parseErrors,
+          dbErrors: res.dbErrors,
+        });
+      }
     });
   }
 
@@ -84,6 +118,12 @@ export function ImportCsvClient() {
           className="mt-2 block w-full text-sm"
           onChange={(e) => onFile(e.target.files?.[0] ?? null)}
         />
+        {filename && (
+          <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-400">
+            Uploaded:{" "}
+            <span className="font-medium text-zinc-900 dark:text-zinc-100">{filename}</span>
+          </p>
+        )}
       </label>
 
       {headers.length > 0 && (
@@ -109,33 +149,7 @@ export function ImportCsvClient() {
             ))}
           </div>
 
-          <div>
-            <h3 className="text-sm font-medium">Preview (first 5 rows)</h3>
-            <div className="mt-2 overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
-              <table className="min-w-full text-left text-xs">
-                <thead>
-                  <tr>
-                    {headers.map((h) => (
-                      <th key={h} className="border-b border-zinc-200 px-2 py-1 dark:border-zinc-800">
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {previewRows.map((row, i) => (
-                    <tr key={i}>
-                      {headers.map((h) => (
-                        <td key={h} className="border-b border-zinc-100 px-2 py-1 dark:border-zinc-900">
-                          {row[h] ?? ""}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <ImportPreviewTable headers={headers} previewRows={previewRows} />
 
           <button
             type="button"
@@ -149,35 +163,22 @@ export function ImportCsvClient() {
       )}
 
       {result && (
-        <div
-          className={`rounded-lg border p-4 text-sm ${
-            result.ok
-              ? "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-100"
-              : "border-red-200 bg-red-50 text-red-900 dark:border-red-900 dark:bg-red-950 dark:text-red-100"
-          }`}
-        >
-          <p className="font-medium">{result.message}</p>
-          {result.parseErrors && result.parseErrors.length > 0 && (
-            <details className="mt-2">
-              <summary className="cursor-pointer text-xs">Parse issues ({result.parseErrors.length})</summary>
-              <ul className="mt-2 max-h-40 list-inside list-disc overflow-y-auto text-xs">
-                {result.parseErrors.slice(0, 30).map((e, i) => (
-                  <li key={i}>
-                    Row {e.rowIndex}: {e.message}
-                  </li>
-                ))}
-              </ul>
-            </details>
-          )}
-          {result.dbErrors && result.dbErrors.length > 0 && (
-            <details className="mt-2">
-              <summary className="cursor-pointer text-xs">DB issues ({result.dbErrors.length})</summary>
-              <ul className="mt-2 max-h-40 list-inside list-disc overflow-y-auto text-xs">
-                {result.dbErrors.slice(0, 30).map((e, i) => (
-                  <li key={i}>{e}</li>
-                ))}
-              </ul>
-            </details>
+        <div className="space-y-3">
+          <ImportResultSummary
+            ok={result.ok}
+            message={result.message}
+            rowCount={result.rowCount}
+            parseErrors={result.parseErrors}
+            dbErrors={result.dbErrors}
+          />
+          {result.importJobId && onViewDetails && (
+            <button
+              type="button"
+              onClick={() => onViewDetails(result.importJobId!)}
+              className="text-sm font-medium text-indigo-600 underline hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300"
+            >
+              View import details →
+            </button>
           )}
         </div>
       )}

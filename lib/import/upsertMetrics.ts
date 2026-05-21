@@ -16,7 +16,8 @@ export type UpsertSummary = {
 export async function upsertImportRows(
   supabase: SupabaseClient,
   userId: string,
-  rows: NormalizedImportRow[]
+  rows: NormalizedImportRow[],
+  importJobId?: string
 ): Promise<UpsertSummary> {
   const errors: string[] = [];
   let postsTouched = 0;
@@ -48,20 +49,24 @@ export async function upsertImportRows(
 
     postsTouched += 1;
 
-    const { error: metricError } = await supabase.from("post_metrics_daily").upsert(
-      {
-        user_id: userId,
-        post_uuid: post.id,
-        metric_date: row.metric_date,
-        impressions: row.impressions,
-        reach: row.reach,
-        likes: row.likes,
-        comments: row.comments,
-        saves: row.saves,
-        shares: row.shares,
-      },
-      { onConflict: "user_id,post_uuid,metric_date" }
-    );
+    const metricPayload: Record<string, unknown> = {
+      user_id: userId,
+      post_uuid: post.id,
+      metric_date: row.metric_date,
+      impressions: row.impressions,
+      reach: row.reach,
+      likes: row.likes,
+      comments: row.comments,
+      saves: row.saves,
+      shares: row.shares,
+    };
+    if (importJobId) {
+      metricPayload.import_job_id = importJobId;
+    }
+
+    const { error: metricError } = await supabase
+      .from("post_metrics_daily")
+      .upsert(metricPayload, { onConflict: "user_id,post_uuid,metric_date" });
 
     if (metricError) {
       errors.push(`Metrics ${row.post_id} ${row.metric_date}: ${metricError.message}`);

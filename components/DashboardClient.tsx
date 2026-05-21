@@ -1,6 +1,7 @@
 "use client";
 
 import { EngagementChart } from "@/components/EngagementChart";
+import { EngagementsBarChart } from "@/components/EngagementsBarChart";
 import { PostsTable } from "@/components/PostsTable";
 import type { EngagementDenominator, PostAgg, TrendPoint } from "@/lib/analytics/engagement";
 
@@ -23,6 +24,8 @@ function denominatorHelp(pref: EngagementDenominator) {
 export function DashboardClient(props: {
   from: string;
   to: string;
+  usingDefaultRange: boolean;
+  latestMetricDate: string | null;
   mediaFilter: string;
   denominator: EngagementDenominator;
   trend: TrendPoint[];
@@ -30,13 +33,30 @@ export function DashboardClient(props: {
   totals: { engagements: number; impressions: number; reach: number; rate: number | null };
   hasData: boolean;
 }) {
-  const { from, to, mediaFilter, denominator, trend, postsAgg, totals, hasData } = props;
+  const {
+    from,
+    to,
+    usingDefaultRange,
+    latestMetricDate,
+    mediaFilter,
+    denominator,
+    trend,
+    postsAgg,
+    totals,
+    hasData,
+  } = props;
 
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Engagement overview</h1>
         <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">{denominatorHelp(denominator)}</p>
+        {usingDefaultRange && latestMetricDate && (
+          <p className="mt-1 text-xs text-zinc-500">
+            Showing the latest 7 days of metrics ({from} – {to}), ending on your most recent{" "}
+            <code className="font-mono">metric_date</code> ({latestMetricDate}).
+          </p>
+        )}
       </div>
 
       <form method="get" className="flex flex-wrap items-end gap-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
@@ -109,10 +129,16 @@ export function DashboardClient(props: {
             </div>
           </div>
 
-          <section className="space-y-3">
-            <h2 className="text-lg font-medium">Daily engagement rate</h2>
-            <EngagementChart data={trend} />
-          </section>
+          <div className="grid gap-8 lg:grid-cols-2">
+            <section className="space-y-3">
+              <h2 className="text-lg font-medium">Daily engagement rate</h2>
+              <EngagementChart data={trend} />
+            </section>
+            <section className="space-y-3">
+              <h2 className="text-lg font-medium">Daily engagements</h2>
+              <EngagementsBarChart data={trend} />
+            </section>
+          </div>
 
           <section className="space-y-3">
             <h2 className="text-lg font-medium">Posts</h2>

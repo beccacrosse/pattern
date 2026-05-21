@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { parseAndNormalizeCsv } from "@/lib/import/csvParser";
+import { parseAndNormalizeCsv, parseCsv } from "@/lib/import/csvParser";
+import { deleteImportJob } from "@/lib/import/deleteImportJob";
 import { upsertImportRows } from "@/lib/import/upsertMetrics";
 import type { CsvColumnMapping } from "@/lib/import/types";
 import type { EngagementDenominator } from "@/lib/analytics/engagement";
@@ -47,6 +48,22 @@ export async function importCsvAction(payload: {
   }
 
   try {
+    let headers: string[] = [];
+    let previewRows: Record<string, string>[] = [];
+    try {
+      const parsed = parseCsv(payload.csvText);
+      headers = parsed.headers;
+      previewRows = parsed.rows.slice(0, 5);
+    } catch {
+      /* snapshot optional if CSV cannot be re-parsed */
+    }
+
+    const snapshot = {
+      column_mapping: payload.mapping,
+      headers,
+      preview_rows: previewRows,
+    };
+
     const { rows, errors: parseErrors } = parseAndNormalizeCsv(payload.csvText, payload.mapping);
 
     if (rows.length === 0) {
@@ -56,6 +73,7 @@ export async function importCsvAction(payload: {
           status: "failed",
           row_count: 0,
           errors: parseErrors.slice(0, 200).map((e) => `row ${e.rowIndex}: ${e.message}`),
+          ...snapshot,
         })
         .eq("id", job.id);
 
@@ -70,7 +88,8 @@ export async function importCsvAction(payload: {
     const { postsTouched, metricsUpserted, errors: dbErrors } = await upsertImportRows(
       supabase,
       user.id,
-      rows
+      rows,
+      job.id
     );
 
     const combinedErrors = [
@@ -83,7 +102,9 @@ export async function importCsvAction(payload: {
       .update({
         status: "completed",
         row_count: metricsUpserted,
+        posts_touched: postsTouched,
         errors: combinedErrors,
+        ...snapshot,
       })
       .eq("id", job.id);
 
@@ -110,6 +131,33 @@ export async function importCsvAction(payload: {
 
     return { ok: false, message: msg, importJobId: job.id };
   }
+}
+
+export type DeleteImportJobActionResult = {
+  ok: boolean;
+  message: string;
+};
+
+export async function deleteImportJobAction(
+  jobId: string
+): Promise<DeleteImportJobActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { ok: false, message: "Not signed in" };
+  }
+
+  const result = await deleteImportJob(supabase, user.id, jobId);
+
+  if (result.ok) {
+    revalidatePath("/");
+    revalidatePath("/import");
+  }
+
+  return { ok: result.ok, message: result.message };
 }
 
 export async function updateEngagementPreference(pref: EngagementDenominator) {

@@ -17,6 +17,8 @@ export default async function DashboardPage({
     <DashboardClient
       from={data.from}
       to={data.to}
+      usingDefaultRange={data.usingDefaultRange}
+      latestMetricDate={data.latestMetricDate}
       mediaFilter={data.mediaFilter}
       denominator={data.denominator}
       trend={data.trend}

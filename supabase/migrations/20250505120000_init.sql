@@ -91,6 +91,7 @@ create policy "metrics_delete_own" on public.post_metrics_daily for delete using
 create policy "import_jobs_select_own" on public.import_jobs for select using (auth.uid() = user_id);
 create policy "import_jobs_insert_own" on public.import_jobs for insert with check (auth.uid() = user_id);
 create policy "import_jobs_update_own" on public.import_jobs for update using (auth.uid() = user_id);
+create policy "import_jobs_delete_own" on public.import_jobs for delete using (auth.uid() = user_id);
 
 create policy "prefs_select_own" on public.user_preferences for select using (auth.uid() = user_id);
 create policy "prefs_insert_own" on public.user_preferences for insert with check (auth.uid() = user_id);
