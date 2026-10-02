@@ -1,9 +1,18 @@
 import { spawn } from "node:child_process";
+import { existsSync } from "node:fs";
 import net from "node:net";
 import readline from "node:readline";
 
 const LOCAL_URL_RE = /Local:\s+(https?:\/\/\S+)/;
 const defaultPort = Number(process.env.PORT || 3000);
+const MAC_BROWSERS = [
+  "Google Chrome",
+  "Safari",
+  "Firefox",
+  "Microsoft Edge",
+  "Brave Browser",
+  "Arc",
+];
 
 function waitForServer(port) {
   return new Promise((resolve) => {
@@ -18,9 +27,19 @@ function waitForServer(port) {
   });
 }
 
+function macBrowserApp() {
+  if (process.env.BROWSER) return process.env.BROWSER;
+  return MAC_BROWSERS.find((name) => existsSync(`/Applications/${name}.app`)) ?? "Safari";
+}
+
 function openBrowser(target) {
   if (process.platform === "darwin") {
-    spawn("open", [target], { detached: true, stdio: "ignore" }).unref();
+    // `-a` opens a real browser tab. Plain `open <url>` from Cursor often
+    // lands in the IDE’s Simple Browser instead of Chrome/Safari.
+    spawn("open", ["-a", macBrowserApp(), target], {
+      detached: true,
+      stdio: "ignore",
+    }).unref();
   } else if (process.platform === "win32") {
     spawn("cmd", ["/c", "start", "", target], {
       detached: true,

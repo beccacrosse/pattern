@@ -29,9 +29,16 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let user = null;
+  try {
+    const {
+      data: { user: sessionUser },
+    } = await supabase.auth.getUser();
+    user = sessionUser;
+  } catch {
+    // Unreachable Supabase (paused/deleted project, DNS) should still allow /login.
+    user = null;
+  }
 
   return { supabaseResponse, user };
 }
