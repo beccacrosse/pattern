@@ -2,6 +2,7 @@
 
 import { EngagementChart } from "@/components/EngagementChart";
 import { EngagementsBarChart } from "@/components/EngagementsBarChart";
+import { InstagramCsvTutorial } from "@/components/InstagramCsvTutorial";
 import { PostsTable } from "@/components/PostsTable";
 import type { EngagementDenominator, PostAgg, TrendPoint } from "@/lib/analytics/engagement";
 
@@ -101,12 +102,15 @@ export function DashboardClient(props: {
       </form>
 
       {!hasData && (
-        <div className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-600 dark:border-zinc-700 dark:text-zinc-400">
-          No metrics in this range.{" "}
-          <a href="/import" className="font-medium text-indigo-600 underline dark:text-indigo-400">
-            Import a CSV
-          </a>{" "}
-          or widen the date range.
+        <div className="space-y-3">
+          <div className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-600 dark:border-zinc-700 dark:text-zinc-400">
+            No metrics in this range.{" "}
+            <a href="/import" className="font-medium text-indigo-600 underline dark:text-indigo-400">
+              Import a CSV
+            </a>{" "}
+            or widen the date range.
+          </div>
+          <InstagramCsvTutorial />
         </div>
       )}
 

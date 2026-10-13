@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { importCsvAction, type ImportCsvResult } from "@/app/actions/import";
 import { ImportPreviewTable, ImportResultSummary } from "@/components/ImportJobDetail";
+import { InstagramCsvTutorial } from "@/components/InstagramCsvTutorial";
 import { parseCsv, suggestMapping } from "@/lib/import/csvParser";
 import type { CsvColumnMapping } from "@/lib/import/types";
 import { STANDARD_COLUMNS, type StandardColumn } from "@/lib/import/types";
@@ -125,6 +126,8 @@ export function ImportCsvClient({
           </p>
         )}
       </label>
+
+      <InstagramCsvTutorial />
 
       {headers.length > 0 && (
         <div className="space-y-4">
